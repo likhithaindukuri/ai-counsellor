@@ -10,6 +10,7 @@ export default function Signup() {
     try {
       const res = await api.post("/auth/signup", form);
       localStorage.setItem("userId", res.data.userId);
+      localStorage.setItem("userName", form.fullName);
       navigate("/onboarding");
     } catch (error) {
       alert(error.response?.data?.message || "Signup failed. Please try again.");

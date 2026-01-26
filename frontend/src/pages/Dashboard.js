@@ -1,35 +1,66 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
-import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
   const [profile, setProfile] = useState(null);
-  const navigate = useNavigate();
+  const [todos, setTodos] = useState([]);
   const userId = localStorage.getItem("userId");
+  const userName = localStorage.getItem("userName") || "User";
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const load = async () => {
       try {
-        const res = await api.get(`/onboarding/profile/${userId}`);
-        if (!res.data.onboarding_completed) {
-          navigate("/onboarding");
-          return;
-        }
-        setProfile(res.data);
+        // Fetch profile with stage (existing endpoint: /api/onboarding/profile/:userId)
+        const p = await api.get(`/onboarding/profile/${userId}`);
+        const profileData = p.data;
+        
+        // Fetch todos (existing endpoint: /api/application/todos/:userId returns { todos: [...] })
+        const t = await api.get(`/application/todos/${userId}`);
+        const todosData = t.data.todos || [];
+        
+        // Extract task strings from todos array (todos are objects with { task, status })
+        const todoStrings = todosData.map(todo => todo.task || todo);
+        
+        setProfile({
+          ...profileData,
+          name: userName,
+          profile_strength: profileData.profile_strength || "Calculating..."
+        });
+        setTodos(todoStrings);
       } catch (error) {
-        console.error("Failed to fetch profile:", error);
-        alert("Failed to load profile. Please try again.");
+        console.error("Failed to load dashboard:", error);
       }
     };
-    fetchProfile();
-  }, [userId, navigate]);
+    load();
+  }, [userId, userName]);
 
-  if (!profile) return <p>Loading...</p>;
+  if (!profile) return <p>Loading dashboard...</p>;
 
   return (
-    <div>
-      <h1>Dashboard</h1>
-      <p>Current Stage: {profile.stage}</p>
+    <div style={{ padding: 30 }}>
+      <h1>Welcome, {profile.name}</h1>
+
+      {/* Stage */}
+      <section>
+        <h2>Current Stage</h2>
+        <p>{profile.stage}</p>
+      </section>
+
+      {/* Profile Strength */}
+      <section>
+        <h2>Profile Strength</h2>
+        <p>{profile.profile_strength || "Calculating..."}</p>
+      </section>
+
+      {/* AI To-Dos */}
+      <section>
+        <h2>Your Next Actions</h2>
+        <ul>
+          {todos.map((t, i) => (
+            <li key={i}>{t}</li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }
