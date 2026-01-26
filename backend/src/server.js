@@ -8,6 +8,7 @@ const onboardingRoutes = require("./routes/onboardingRoutes");
 const aiCounsellorRoutes = require("./routes/aiCounsellorRoutes");
 const universityRoutes = require("./routes/universityRoutes");
 const lockRoutes = require("./routes/lockRoutes");
+const applicationRoutes = require("./routes/applicationRoutes");
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use("/api/onboarding", onboardingRoutes);
 app.use("/api/ai", aiCounsellorRoutes);
 app.use("/api/universities", universityRoutes);
 app.use("/api/lock", lockRoutes);
+app.use("/api/application", applicationRoutes);
 
 // Health check route
 app.get("/", (req, res) => {
