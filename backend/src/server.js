@@ -6,6 +6,7 @@ const pool = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const onboardingRoutes = require("./routes/onboardingRoutes");
 const aiCounsellorRoutes = require("./routes/aiCounsellorRoutes");
+const universityRoutes = require("./routes/universityRoutes");
 
 const app = express();
 
@@ -26,6 +27,7 @@ pool.query("SELECT NOW()", (err, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/onboarding", onboardingRoutes);
 app.use("/api/ai", aiCounsellorRoutes);
+app.use("/api/universities", universityRoutes);
 
 // Health check route
 app.get("/", (req, res) => {
