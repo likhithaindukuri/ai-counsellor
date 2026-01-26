@@ -1,0 +1,28 @@
+const { createUser } = require("../models/userModel");
+const { createEmptyProfile } = require("../models/profileModel");
+const { createInitialStage } = require("../models/stageModel");
+
+const signup = async (req, res) => {
+  try {
+    const { fullName, email, password } = req.body;
+
+    if (!fullName || !email || !password) {
+      return res.status(400).json({ 
+        message: "Missing required fields: fullName, email, and password are required" 
+      });
+    }
+
+    const user = await createUser(fullName, email, password);
+    await createEmptyProfile(user.id);
+    await createInitialStage(user.id);
+
+    res.status(201).json({ message: "User created", userId: user.id });
+  } catch (error) {
+    console.error("Signup error:", error);
+    res.status(500).json({ 
+      message: "Failed to create user. Please try again later." 
+    });
+  }
+};
+
+module.exports = { signup };

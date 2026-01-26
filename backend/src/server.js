@@ -3,6 +3,7 @@ const cors = require("cors");
 require("dotenv").config();
 
 const pool = require("./config/db");
+const authRoutes = require("./routes/authRoutes");
 
 const app = express();
 
@@ -18,6 +19,9 @@ pool.query("SELECT NOW()", (err, res) => {
     console.log("Database time:", res.rows[0]);
   }
 });
+
+// Routes
+app.use("/api/auth", authRoutes);
 
 // Health check route
 app.get("/", (req, res) => {
