@@ -1,4 +1,4 @@
-const { createUser } = require("../models/userModel");
+const { createUser, findUserByEmail } = require("../models/userModel");
 const { createEmptyProfile } = require("../models/profileModel");
 const { createInitialStage } = require("../models/stageModel");
 
@@ -25,4 +25,38 @@ const signup = async (req, res) => {
   }
 };
 
-module.exports = { signup };
+const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ 
+        message: "Email and password are required" 
+      });
+    }
+
+    const user = await findUserByEmail(email);
+
+    if (!user) {
+      return res.status(401).json({ 
+        message: "Invalid email or password" 
+      });
+    }
+
+    // Simple password check (in production, use bcrypt to compare hashed passwords)
+    if (user.password !== password) {
+      return res.status(401).json({ 
+        message: "Invalid email or password" 
+      });
+    }
+
+    res.json({ message: "Login successful", userId: user.id });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ 
+      message: "Login failed. Please try again later." 
+    });
+  }
+};
+
+module.exports = { signup, login };
