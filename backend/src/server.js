@@ -4,6 +4,7 @@ require("dotenv").config();
 
 const pool = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
+const onboardingRoutes = require("./routes/onboardingRoutes");
 
 const app = express();
 
@@ -22,6 +23,7 @@ pool.query("SELECT NOW()", (err, res) => {
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/onboarding", onboardingRoutes);
 
 // Health check route
 app.get("/", (req, res) => {
