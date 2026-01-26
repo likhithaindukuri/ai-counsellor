@@ -1,5 +1,6 @@
 const { getProfile } = require("../models/profileModel");
 const { getStage } = require("../models/stageModel");
+const { getLockedUniversity } = require("../models/lockModel");
 
 const aiCounsellor = async (req, res) => {
   try {
@@ -52,8 +53,16 @@ const aiCounsellor = async (req, res) => {
     }
 
     if (stage === "APPLICATION_PREP") {
+      const lockedUni = getLockedUniversity(userId);
+
+      if (!lockedUni) {
+        return res.json({
+          response: "Please lock at least one university to proceed."
+        });
+      }
+
       return res.json({
-        response: "We are now preparing applications."
+        response: `Preparing application for ${lockedUni}`
       });
     }
 
