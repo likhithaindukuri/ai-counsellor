@@ -2,11 +2,22 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
+const pool = require("./config/db");
+
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Test database connection
+pool.query("SELECT NOW()", (err, res) => {
+  if (err) {
+    console.error("Database connection failed", err);
+  } else {
+    console.log("Database time:", res.rows[0]);
+  }
+});
 
 // Health check route
 app.get("/", (req, res) => {
