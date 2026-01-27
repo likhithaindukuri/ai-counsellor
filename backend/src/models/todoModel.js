@@ -16,9 +16,11 @@ const getTodos = (userId) => {
 
 const completeTodo = (userId, taskIndex) => {
   if (global.todos[userId] && global.todos[userId][taskIndex]) {
-    global.todos[userId][taskIndex].status = "completed";
+    // Toggle between pending and completed
+    const currentStatus = global.todos[userId][taskIndex].status;
+    global.todos[userId][taskIndex].status = currentStatus === "completed" ? "pending" : "completed";
   }
-  return global.todos[userId];
+  return global.todos[userId] || [];
 };
 
 module.exports = { generateTodos, getTodos, completeTodo };

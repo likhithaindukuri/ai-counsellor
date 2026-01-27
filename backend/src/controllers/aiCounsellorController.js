@@ -85,9 +85,31 @@ const aiCounsellor = async (req, res) => {
       const lockedUni = getLockedUniversity(userId);
       const todos = getTodos(userId);
 
+      // If in APPLICATION_PREP but no locked university, allow recommendations
+      // This handles edge case where stage was set but lock wasn't stored properly
       if (!lockedUni) {
+        const msgLower = message?.toLowerCase() || "";
+        
+        // If asking for recommendations, provide them
+        if (msgLower.includes("recommend") || msgLower.includes("suggest") || msgLower.includes("university")) {
+          return res.json({
+            response: generateUniversityAdvice(profile)
+          });
+        }
+        
+        // Otherwise, prompt to lock
         return res.json({
-          response: "Please lock at least one university to proceed."
+          response: "Please lock at least one university to proceed with application preparation. You can still get recommendations by asking me to suggest universities."
+        });
+      }
+
+      // User has locked university - provide application guidance
+      const msgLower = message?.toLowerCase() || "";
+      
+      // Still allow recommendations even in APPLICATION_PREP if explicitly asked
+      if (msgLower.includes("recommend") || msgLower.includes("suggest") || msgLower.includes("university")) {
+        return res.json({
+          response: generateUniversityAdvice(profile)
         });
       }
 
