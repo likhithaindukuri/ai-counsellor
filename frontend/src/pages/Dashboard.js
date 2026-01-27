@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
 export default function Dashboard() {
   const [profile, setProfile] = useState(null);
   const [todos, setTodos] = useState([]);
+  const navigate = useNavigate();
   const userId = localStorage.getItem("userId");
   const userName = localStorage.getItem("userName") || "User";
 
@@ -39,6 +41,9 @@ export default function Dashboard() {
   return (
     <div style={{ padding: 30 }}>
       <h1>Welcome, {profile.name}</h1>
+      <button onClick={() => navigate("/counsellor")} style={{ marginBottom: 20, padding: 10 }}>
+        Chat with AI Counsellor
+      </button>
 
       {/* Stage */}
       <section>
