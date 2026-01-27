@@ -2,9 +2,12 @@ const { lockUniversity, unlockUniversity, getLockedUniversity } = require("../mo
 const { updateStage } = require("../models/stageModel");
 
 const lockUni = async (req, res) => {
-  const { userId, universityName } = req.body;
+  const { userId, universityId, universityName } = req.body;
+  
+  // Support both universityId and universityName for compatibility
+  const name = universityName || universityId;
 
-  const locked = lockUniversity(userId, universityName);
+  const locked = lockUniversity(userId, name);
   await updateStage(userId, "APPLICATION_PREP");
 
   res.json({

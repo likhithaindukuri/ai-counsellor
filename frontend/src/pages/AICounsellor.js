@@ -1,10 +1,24 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
 export default function AICounsellor() {
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState([]);
+  const navigate = useNavigate();
   const userId = localStorage.getItem("userId");
+
+  const shortlistUniversity = async (universityName) => {
+    try {
+      await api.post("/universities/shortlist", {
+        userId,
+        universityName
+      });
+      alert(`${universityName} added to shortlist!`);
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to shortlist university. Please try again.");
+    }
+  };
 
   const sendMessage = async () => {
     if (!message) return;
@@ -21,6 +35,8 @@ export default function AICounsellor() {
 
       // Handle response - can be string or object
       let responseText = "";
+      let recommendations = null;
+      
       if (typeof res.data.response === "string") {
         responseText = res.data.response;
       } else if (typeof res.data.response === "object" && res.data.response !== null) {
@@ -28,6 +44,7 @@ export default function AICounsellor() {
         if (res.data.response.recommendations) {
           // University recommendations
           const rec = res.data.response.recommendations;
+          recommendations = rec; // Store for shortlist buttons
           responseText = `Based on your profile:\n\n` +
             `Dream: ${rec.dream?.join(", ") || "N/A"}\n` +
             `Target: ${rec.target?.join(", ") || "N/A"}\n` +
@@ -64,7 +81,8 @@ export default function AICounsellor() {
 
       const aiMsg = {
         role: "ai",
-        text: responseText
+        text: responseText,
+        recommendations: recommendations // Store recommendations for shortlist buttons
       };
 
       setChat(prev => [...prev, aiMsg]);
@@ -79,7 +97,12 @@ export default function AICounsellor() {
 
   return (
     <div style={{ padding: 30 }}>
-      <h1>AI Counsellor</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <h1>AI Counsellor</h1>
+        <button onClick={() => navigate("/shortlist")} style={{ padding: 10 }}>
+          Go to Shortlist
+        </button>
+      </div>
 
       <div style={{ minHeight: 300, border: "1px solid #ccc", padding: 10, overflowY: "auto", marginBottom: 10 }}>
         {chat.length === 0 && (
@@ -89,6 +112,46 @@ export default function AICounsellor() {
           <div key={i} style={{ marginBottom: 15 }}>
             <b>{c.role === "ai" ? "Counsellor" : "You"}:</b>
             <div style={{ marginTop: 5, whiteSpace: "pre-wrap" }}>{c.text}</div>
+            {c.recommendations && (
+              <div style={{ marginTop: 10 }}>
+                <div style={{ marginBottom: 10 }}>
+                  <strong>Dream Universities:</strong>
+                  {c.recommendations.dream?.map((uni, idx) => (
+                    <button
+                      key={`dream-${idx}`}
+                      onClick={() => shortlistUniversity(uni)}
+                      style={{ margin: "5px", padding: "5px 10px", fontSize: "12px", cursor: "pointer" }}
+                    >
+                      + {uni}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ marginBottom: 10 }}>
+                  <strong>Target Universities:</strong>
+                  {c.recommendations.target?.map((uni, idx) => (
+                    <button
+                      key={`target-${idx}`}
+                      onClick={() => shortlistUniversity(uni)}
+                      style={{ margin: "5px", padding: "5px 10px", fontSize: "12px", cursor: "pointer" }}
+                    >
+                      + {uni}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ marginBottom: 10 }}>
+                  <strong>Safe Universities:</strong>
+                  {c.recommendations.safe?.map((uni, idx) => (
+                    <button
+                      key={`safe-${idx}`}
+                      onClick={() => shortlistUniversity(uni)}
+                      style={{ margin: "5px", padding: "5px 10px", fontSize: "12px", cursor: "pointer" }}
+                    >
+                      + {uni}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>

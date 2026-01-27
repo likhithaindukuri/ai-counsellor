@@ -5,6 +5,7 @@ import Signup from "./pages/Signup";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import AICounsellor from "./pages/AICounsellor";
+import Shortlist from "./pages/Shortlist";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -22,6 +23,9 @@ function App() {
         } />
         <Route path="/counsellor" element={
           <ProtectedRoute><AICounsellor /></ProtectedRoute>
+        } />
+        <Route path="/shortlist" element={
+          <ProtectedRoute><Shortlist /></ProtectedRoute>
         } />
       </Routes>
     </BrowserRouter>

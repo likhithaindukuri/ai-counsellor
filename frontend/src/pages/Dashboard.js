@@ -41,9 +41,14 @@ export default function Dashboard() {
   return (
     <div style={{ padding: 30 }}>
       <h1>Welcome, {profile.name}</h1>
-      <button onClick={() => navigate("/counsellor")} style={{ marginBottom: 20, padding: 10 }}>
-        Chat with AI Counsellor
-      </button>
+      <div style={{ marginBottom: 20 }}>
+        <button onClick={() => navigate("/counsellor")} style={{ marginRight: 10, padding: 10 }}>
+          Chat with AI Counsellor
+        </button>
+        <button onClick={() => navigate("/shortlist")} style={{ padding: 10 }}>
+          View Shortlist
+        </button>
+      </div>
 
       {/* Stage */}
       <section>
