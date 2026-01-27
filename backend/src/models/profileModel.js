@@ -11,12 +11,18 @@ const updateProfile = async (userId, data) => {
   const fields = Object.keys(data);
   const values = Object.values(data);
 
+  if (fields.length === 0) {
+    return; // No fields to update
+  }
+
   const setClause = fields
     .map((field, i) => `${field}=$${i + 1}`)
     .join(",");
 
+  // Don't force onboarding_completed=true on every update
+  // Only update the fields provided
   await pool.query(
-    `UPDATE user_profiles SET ${setClause}, onboarding_completed=true WHERE user_id=$${fields.length + 1}`,
+    `UPDATE user_profiles SET ${setClause} WHERE user_id=$${fields.length + 1}`,
     [...values, userId]
   );
 };

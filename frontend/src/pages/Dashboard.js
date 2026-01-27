@@ -48,6 +48,9 @@ export default function Dashboard() {
         <button onClick={() => navigate("/shortlist")} style={{ marginRight: 10, padding: 10 }}>
           View Shortlist
         </button>
+        <button onClick={() => navigate("/profile")} style={{ marginRight: 10, padding: 10 }}>
+          Edit Profile
+        </button>
         {profile.stage === "APPLICATION_PREP" && (
           <button onClick={() => navigate("/application")} style={{ padding: 10 }}>
             Prepare Application
