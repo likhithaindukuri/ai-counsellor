@@ -2,6 +2,8 @@ const { getProfile } = require("../models/profileModel");
 const { getStage } = require("../models/stageModel");
 const { getLockedUniversity } = require("../models/lockModel");
 const { getTodos } = require("../models/todoModel");
+const { shortlistUniversity } = require("../models/universityModel");
+const { getUniversities } = require("../models/universityModel");
 
 const aiCounsellor = async (req, res) => {
   try {
@@ -22,7 +24,8 @@ const aiCounsellor = async (req, res) => {
       });
     }
 
-    if (!profile.onboarding_completed) {
+    // Derive onboarding completion from key fields instead of relying on a specific DB flag
+    if (!isOnboardingComplete(profile)) {
       return res.status(403).json({
         message: "Please complete onboarding to unlock AI Counsellor."
       });
@@ -44,10 +47,32 @@ const aiCounsellor = async (req, res) => {
     if (stage === "UNIVERSITY_DISCOVERY") {
       const msgLower = message?.toLowerCase() || "";
       
+      // AI ACTION: Detect shortlist intent and automatically shortlist
+      const allUnis = getUniversities();
+      const shortlistIntent = msgLower.match(/shortlist|add|save|include/i);
+      if (shortlistIntent) {
+        // Try to find university name in message
+        for (const uni of allUnis) {
+          if (msgLower.includes(uni.name.toLowerCase())) {
+            try {
+              await shortlistUniversity(userId, uni.name);
+              return res.json({
+                response: `✅ I've added ${uni.name} to your shortlist! You can view all shortlisted universities in the Shortlist page.`,
+                action: "shortlisted",
+                university: uni.name
+              });
+            } catch (error) {
+              console.error("Error shortlisting from AI:", error);
+            }
+          }
+        }
+      }
+      
       // Analyze message intent
       if (msgLower.includes("recommend") || msgLower.includes("suggest") || msgLower.includes("university")) {
+        const advice = await generateUniversityAdvice(profile);
         return res.json({
-          response: generateUniversityAdvice(profile)
+          response: advice
         });
       }
       
@@ -70,8 +95,9 @@ const aiCounsellor = async (req, res) => {
       }
       
       // Default for UNIVERSITY_DISCOVERY stage
+      const advice = await generateUniversityAdvice(profile);
       return res.json({
-        response: generateUniversityAdvice(profile)
+        response: advice
       });
     }
 
@@ -82,8 +108,8 @@ const aiCounsellor = async (req, res) => {
     }
 
     if (stage === "APPLICATION_PREP") {
-      const lockedUni = getLockedUniversity(userId);
-      const todos = getTodos(userId);
+      const lockedUni = await getLockedUniversity(userId);
+      const todos = await getTodos(userId);
 
       // If in APPLICATION_PREP but no locked university, allow recommendations
       // This handles edge case where stage was set but lock wasn't stored properly
@@ -92,8 +118,9 @@ const aiCounsellor = async (req, res) => {
         
         // If asking for recommendations, provide them
         if (msgLower.includes("recommend") || msgLower.includes("suggest") || msgLower.includes("university")) {
+          const advice = await generateUniversityAdvice(profile);
           return res.json({
-            response: generateUniversityAdvice(profile)
+            response: advice
           });
         }
         
@@ -108,8 +135,9 @@ const aiCounsellor = async (req, res) => {
       
       // Still allow recommendations even in APPLICATION_PREP if explicitly asked
       if (msgLower.includes("recommend") || msgLower.includes("suggest") || msgLower.includes("university")) {
+        const advice = await generateUniversityAdvice(profile);
         return res.json({
-          response: generateUniversityAdvice(profile)
+          response: advice
         });
       }
 
@@ -133,19 +161,83 @@ const aiCounsellor = async (req, res) => {
   }
 };
 
-const generateUniversityAdvice = (profile) => {
+const generateUniversityAdvice = async (profile) => {
+  const allUnis = getUniversities();
+  const preferredCountries = profile.preferred_countries || [];
+  const budgetRange = profile.budget_range || "";
+  const userGPA = parseFloat(profile.gpa) || 0;
+
+  // Filter by country preference if specified
+  let filteredUnis = allUnis;
+  if (preferredCountries.length > 0) {
+    filteredUnis = allUnis.filter(uni => 
+      preferredCountries.some(country => 
+        uni.country.toLowerCase().includes(country.toLowerCase()) || 
+        country.toLowerCase().includes(uni.country.toLowerCase())
+      )
+    );
+    if (filteredUnis.length === 0) {
+      filteredUnis = allUnis;
+    }
+  }
+
+  // Filter by budget
+  if (budgetRange) {
+    const budgetLower = budgetRange.toLowerCase();
+    if (budgetLower.includes("low") || budgetLower.includes("20") || budgetLower.includes("30")) {
+      filteredUnis = filteredUnis.filter(uni => 
+        uni.costLevel === "Low" || uni.costLevel === "Medium"
+      );
+    } else if (!budgetLower.includes("high") && !budgetLower.includes("50") && !budgetLower.includes("60")) {
+      filteredUnis = filteredUnis.filter(uni => uni.costLevel !== "High");
+    }
+  }
+
+  const dream = [];
+  const target = [];
+  const safe = [];
+
+  filteredUnis.forEach((uni) => {
+    if (userGPA >= uni.requiredGPA + 0.5) {
+      safe.push(uni.name);
+    } else if (userGPA >= uni.requiredGPA - 0.5) {
+      target.push(uni.name);
+    } else {
+      dream.push(uni.name);
+    }
+  });
+
+  // Take top 3 from each bucket based on risk logic
+  let dreamTop = dream.slice(0, 3);
+  let targetTop = target.slice(0, 3);
+  let safeTop = safe.slice(0, 3);
+
+  // Fallback: always expose at least some Dream and Target where possible,
+  // even if the strict GPA thresholds only produced "safe" options.
+  if (dreamTop.length === 0 && targetTop.length === 0 && safeTop.length > 0) {
+    // Promote the strongest safe option(s) to Target/Dream for better UX
+    if (safeTop.length >= 1) {
+      dreamTop = [safeTop[0]];
+    }
+    if (safeTop.length >= 2) {
+      targetTop = safeTop.slice(1, Math.min(3, safeTop.length));
+    }
+    // Keep remaining in safe if any
+    safeTop = safe.slice(3, 6);
+  }
+
   return {
     profileSummary: {
-      academics: profile.gpa ? "Average" : "Needs improvement",
+      academics: profile.gpa ? (userGPA >= 8.0 ? "Strong" : userGPA >= 7.0 ? "Average" : "Needs improvement") : "Needs improvement",
       exams: profile.ielts_status,
       sop: profile.sop_status
     },
     recommendations: {
-      dream: ["Stanford University"],
-      target: ["University of Texas Austin"],
-      safe: ["Arizona State University"]
+      dream: dreamTop,
+      target: targetTop,
+      safe: safeTop
     },
-    reasoning: "Based on your profile and budget, these universities match your risk level."
+    reasoning: `Based on your profile (GPA: ${userGPA || "Not provided"}, Countries: ${preferredCountries.join(", ") || "Any"}, Budget: ${budgetRange || "Not specified"}), these universities match your risk level. You can ask me to shortlist any of these by saying "shortlist [university name]".`
   };
 };
 
@@ -208,6 +300,20 @@ const generateRiskExplanation = (profile) => {
     },
     message: "The categorization helps you balance ambition with security. Apply to 2-3 from each category for optimal results."
   };
+};
+
+// Keep onboarding completion logic consistent with onboarding controller
+const isOnboardingComplete = (profile) => {
+  if (!profile) {
+    return false;
+  }
+
+  const hasAcademicBackground = Boolean(profile.current_education && profile.graduation_year);
+  const hasStudyGoal = Boolean(profile.target_degree);
+  const hasPreferencesAndBudget = Boolean(profile.budget_range);
+  const hasExamReadiness = Boolean(profile.ielts_status || profile.gre_gmat_status || profile.sop_status);
+
+  return hasAcademicBackground && hasStudyGoal && hasPreferencesAndBudget && hasExamReadiness;
 };
 
 module.exports = { aiCounsellor };

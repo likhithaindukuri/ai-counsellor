@@ -8,17 +8,17 @@ export default function Profile() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get(`/onboarding/profile/${userId}`)
-      .then(res => {
+    api
+      .get(`/onboarding/profile/${userId}`)
+      .then((res) => {
         const profileData = res.data;
-        // Map database fields to form fields
         setProfile({
           ...profileData,
           countries: profileData.preferred_countries || [],
           budget: profileData.budget_range || ""
         });
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("Failed to load profile:", err);
         alert("Failed to load profile. Please try again.");
       });
@@ -26,7 +26,6 @@ export default function Profile() {
 
   const saveProfile = async () => {
     try {
-      // Map form fields back to database fields
       const profileData = {
         preferred_countries: profile.countries || [],
         budget_range: profile.budget || "",
@@ -42,65 +41,81 @@ export default function Profile() {
     }
   };
 
-  if (!profile) return <p>Loading profile...</p>;
+  if (!profile) return <div className="loading-state">Loading profile...</div>;
 
   return (
-    <div style={{ padding: 30 }}>
-      <h1>Edit Profile</h1>
+    <div className="two-column-layout">
+      <section className="card">
+        <div className="card-header">
+          <div className="card-title">Edit Profile</div>
+          <span className="card-tag">Stage 1 · Building Profile</span>
+        </div>
+        <p className="section-muted">
+          Adjust your high-level preferences. The AI counsellor will recompute recommendations based on the latest
+          values.
+        </p>
 
-      <div style={{ marginBottom: 15 }}>
-        <label style={{ display: "block", marginBottom: 5 }}>Target Country</label>
-        <input
-          value={profile.countries?.[0] || ""}
-          onChange={(e) =>
-            setProfile({ ...profile, countries: [e.target.value] })
-          }
-          style={{ width: "300px", padding: 8 }}
-          placeholder="e.g., USA, Canada"
-        />
-      </div>
+        <div className="form-layout">
+          <label className="field-label">
+            Target Country
+            <input
+              value={profile.countries?.[0] || ""}
+              onChange={(e) => setProfile({ ...profile, countries: [e.target.value] })}
+              className="input-field"
+              placeholder="e.g., USA, Canada"
+            />
+          </label>
 
-      <div style={{ marginBottom: 15 }}>
-        <label style={{ display: "block", marginBottom: 5 }}>Budget (per year)</label>
-        <input
-          value={profile.budget || ""}
-          onChange={(e) =>
-            setProfile({ ...profile, budget: e.target.value })
-          }
-          style={{ width: "300px", padding: 8 }}
-          placeholder="e.g., 20-30 LPA"
-        />
-      </div>
+          <label className="field-label">
+            Budget (per year)
+            <input
+              value={profile.budget || ""}
+              onChange={(e) => setProfile({ ...profile, budget: e.target.value })}
+              className="input-field"
+              placeholder="e.g., 20–30 LPA or 30,000 USD"
+            />
+          </label>
 
-      <div style={{ marginBottom: 15 }}>
-        <label style={{ display: "block", marginBottom: 5 }}>SOP Status</label>
-        <select
-          value={profile.sop_status || "Not started"}
-          onChange={(e) =>
-            setProfile({ ...profile, sop_status: e.target.value })
-          }
-          style={{ width: "300px", padding: 8 }}
-        >
-          <option value="Not started">Not Started</option>
-          <option value="In Progress">In Progress</option>
-          <option value="Completed">Completed</option>
-        </select>
-      </div>
+          <label className="field-label">
+            SOP Status
+            <select
+              value={profile.sop_status || "Not started"}
+              onChange={(e) => setProfile({ ...profile, sop_status: e.target.value })}
+              className="select-field"
+              style={{ marginTop: 4, maxWidth: 320 }}
+            >
+              <option value="Not started">Not Started</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </label>
 
-      <div style={{ marginTop: 20 }}>
-        <button 
-          onClick={saveProfile}
-          style={{ padding: 10, backgroundColor: "#007bff", color: "white", border: "none", borderRadius: 5, cursor: "pointer", marginRight: 10 }}
-        >
-          Save Profile
-        </button>
-        <button 
-          onClick={() => navigate("/dashboard")}
-          style={{ padding: 10, backgroundColor: "#6c757d", color: "white", border: "none", borderRadius: 5, cursor: "pointer" }}
-        >
-          Cancel
-        </button>
-      </div>
+          <div style={{ marginTop: 8 }}>
+            <button type="button" className="primary-button" onClick={saveProfile}>
+              Save Profile
+            </button>
+            <button
+              type="button"
+              className="secondary-button"
+              style={{ marginLeft: 8 }}
+              onClick={() => navigate("/dashboard")}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="card">
+        <h3 className="section-heading" style={{ marginTop: 0 }}>
+          Why this matters
+        </h3>
+        <ul className="list-subtle">
+          <li>Target countries and budget directly affect which universities are considered realistic.</li>
+          <li>SOP status helps the AI decide whether to push you towards drafting or polishing your statement.</li>
+          <li>Keeping this up to date keeps recommendations and risk assessments accurate.</li>
+        </ul>
+      </section>
     </div>
   );
 }

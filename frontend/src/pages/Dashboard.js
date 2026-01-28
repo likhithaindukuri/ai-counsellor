@@ -12,17 +12,15 @@ export default function Dashboard() {
   useEffect(() => {
     const load = async () => {
       try {
-        // Fetch profile with stage (existing endpoint: /api/onboarding/profile/:userId)
         const p = await api.get(`/onboarding/profile/${userId}`);
         const profileData = p.data;
-        
-        // Fetch todos (existing endpoint: /api/application/todos/:userId returns { todos: [...] })
+
         const t = await api.get(`/application/todos/${userId}`);
         const todosData = t.data.todos || [];
-        
-        // Extract task strings from todos array (todos are objects with { task, status })
-        const todoStrings = todosData.map(todo => todo.task || todo);
-        
+        const todoStrings = todosData
+          .filter((todo) => !(todo.status === "completed" || todo.completed === true))
+          .map((todo) => todo.task || todo);
+
         setProfile({
           ...profileData,
           name: userName,
@@ -36,48 +34,110 @@ export default function Dashboard() {
     load();
   }, [userId, userName]);
 
-  if (!profile) return <p>Loading dashboard...</p>;
+  if (!profile) {
+    return <div className="loading-state">Loading dashboard...</div>;
+  }
 
   return (
-    <div style={{ padding: 30 }}>
-      <h1>Welcome, {profile.name}</h1>
-      <div style={{ marginBottom: 20 }}>
-        <button onClick={() => navigate("/counsellor")} style={{ marginRight: 10, padding: 10 }}>
-          Chat with AI Counsellor
-        </button>
-        <button onClick={() => navigate("/shortlist")} style={{ marginRight: 10, padding: 10 }}>
-          View Shortlist
-        </button>
-        <button onClick={() => navigate("/profile")} style={{ marginRight: 10, padding: 10 }}>
-          Edit Profile
-        </button>
-        {profile.stage === "APPLICATION_PREP" && (
-          <button onClick={() => navigate("/application")} style={{ padding: 10 }}>
-            Prepare Application
+    <div className="two-column-layout">
+      <section className="card">
+        <div className="card-header">
+          <div className="card-title">Dashboard</div>
+          <span className="card-tag">Control Center</span>
+        </div>
+        <div className="page-header">
+          <h2 className="page-title" style={{ fontSize: 22 }}>
+            Welcome, {profile.name}
+          </h2>
+          <p className="page-subtitle">
+            This is your home base. Follow the stages in order and keep an eye on your AI-generated tasks.
+          </p>
+        </div>
+
+        <div style={{ marginBottom: 20 }} className="form-row-inline">
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => navigate("/counsellor")}
+          >
+            Chat with AI Counsellor
           </button>
-        )}
-      </div>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => navigate("/shortlist")}
+          >
+            View Shortlist
+          </button>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => navigate("/profile")}
+          >
+            Edit Profile
+          </button>
+          {profile.stage === "APPLICATION_PREP" && (
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => navigate("/application")}
+            >
+              Prepare Application
+            </button>
+          )}
+        </div>
 
-      {/* Stage */}
-      <section>
-        <h2>Current Stage</h2>
-        <p>{profile.stage}</p>
+        <section style={{ marginBottom: 18 }}>
+          <h3 className="section-heading">Current Stage</h3>
+          <p style={{ fontSize: 16, fontWeight: 600, color: "#a5b4fc" }}>
+            {profile.stage === "PROFILE_BUILDING" && "Stage 1: Building Profile"}
+            {profile.stage === "UNIVERSITY_DISCOVERY" && "Stage 2: Discovering Universities"}
+            {profile.stage === "UNIVERSITY_FINALIZATION" && "Stage 3: Finalizing Universities"}
+            {profile.stage === "APPLICATION_PREP" && "Stage 4: Preparing Applications"}
+            {!["PROFILE_BUILDING", "UNIVERSITY_DISCOVERY", "UNIVERSITY_FINALIZATION", "APPLICATION_PREP"].includes(profile.stage) && profile.stage}
+          </p>
+        </section>
+
+        <section>
+          <h3 className="section-heading">Your Next Actions</h3>
+          {todos.length === 0 ? (
+            <div className="empty-state">
+              No active tasks yet. Start by chatting with the AI counsellor or reviewing your profile.
+            </div>
+          ) : (
+            <ul style={{ paddingLeft: 18 }}>
+              {todos.map((t, i) => (
+                <li key={i}>{t}</li>
+              ))}
+            </ul>
+          )}
+        </section>
       </section>
 
-      {/* Profile Strength */}
-      <section>
-        <h2>Profile Strength</h2>
-        <p>{profile.profile_strength || "Calculating..."}</p>
-      </section>
-
-      {/* AI To-Dos */}
-      <section>
-        <h2>Your Next Actions</h2>
-        <ul>
-          {todos.map((t, i) => (
-            <li key={i}>{t}</li>
-          ))}
-        </ul>
+      <section className="card">
+        <h3 className="section-heading" style={{ marginTop: 0 }}>
+          Profile Snapshot
+        </h3>
+        <div style={{ marginBottom: 14 }}>
+          <div className="small muted">Education</div>
+          <div>{profile.current_education || "Not specified"}</div>
+        </div>
+        <div style={{ marginBottom: 14 }}>
+          <div className="small muted">Target Degree</div>
+          <div>{profile.target_degree || "Not specified"}</div>
+        </div>
+        <div style={{ marginBottom: 14 }}>
+          <div className="small muted">Preferred Countries</div>
+          <div>{profile.preferred_countries?.join(", ") || "Not specified"}</div>
+        </div>
+        <div style={{ marginBottom: 14 }}>
+          <div className="small muted">Budget</div>
+          <div>{profile.budget_range || "Not specified"}</div>
+        </div>
+        <div style={{ marginBottom: 14 }}>
+          <div className="small muted">Profile Strength</div>
+          <div>{profile.profile_strength || "Calculating..."}</div>
+        </div>
       </section>
     </div>
   );

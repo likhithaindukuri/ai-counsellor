@@ -4,23 +4,44 @@ import { useNavigate } from "react-router-dom";
 
 export default function Shortlist() {
   const [universities, setUniversities] = useState([]);
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const [loading, setLoading] = useState(true);
   const userId = localStorage.getItem("userId");
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get(`/universities/shortlisted/${userId}`)
-      .then(res => setUniversities(res.data || []))
-      .catch(err => {
+    const checkOnboarding = async () => {
+      try {
+        const res = await api.get(`/onboarding/status/${userId}`);
+        if (!res.data.onboardingCompleted) {
+          alert("Please complete onboarding first to view shortlist.");
+          navigate("/onboarding");
+          return;
+        }
+        setOnboardingComplete(true);
+
+        const shortlistRes = await api.get(`/universities/shortlisted/${userId}`);
+        setUniversities(shortlistRes.data || []);
+      } catch (err) {
         console.error("Failed to load shortlist:", err);
         setUniversities([]);
-      });
-  }, [userId]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (userId) {
+      checkOnboarding();
+    } else {
+      navigate("/login");
+    }
+  }, [userId, navigate]);
 
   const lockUniversity = async (uniId) => {
     try {
       await api.post("/universities/lock", {
         userId,
-        universityId: uniId // Backend will use this as universityName
+        universityId: uniId
       });
       alert("University locked. Application stage unlocked.");
       navigate("/dashboard");
@@ -29,30 +50,83 @@ export default function Shortlist() {
     }
   };
 
+  if (loading) {
+    return <div className="loading-state">Loading...</div>;
+  }
+
+  if (!onboardingComplete) {
+    return null; // Will redirect
+  }
+
   return (
-    <div style={{ padding: 30 }}>
-      <h1>Your Shortlisted Universities</h1>
-
-      {universities.length === 0 ? (
-        <p>No universities in your shortlist yet. Get recommendations from the AI Counsellor!</p>
-      ) : (
-        universities.map(u => (
-          <div
-            key={u.id}
-            style={{ border: "1px solid #ccc", marginBottom: 15, padding: 15 }}
-          >
-            <h3>{u.name}</h3>
-            <p>Country: {u.country}</p>
-            <p>Cost: {u.cost_level}</p>
-            <p>Acceptance Chance: {u.acceptance_chance}</p>
-            <p>Risk: {u.risk_reason}</p>
-
-            <button onClick={() => lockUniversity(u.name)}>
-              Lock This University
-            </button>
+    <div className="two-column-layout">
+      <section className="card">
+        <div className="card-header">
+          <div className="card-title">Shortlisted Universities</div>
+          <span className="card-tag">Stage 2–3 · Discovery & Finalization</span>
+        </div>
+        {universities.length === 0 ? (
+          <div className="empty-state">
+            No universities in your shortlist yet. Ask the AI counsellor to recommend Dream / Target / Safe options and
+            add them directly from the chat.
           </div>
-        ))
-      )}
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 6 }}>
+            {universities.map((u) => (
+              <div
+                key={u.id}
+                style={{
+                  borderRadius: 12,
+                  border: "1px solid #e5e7eb",
+                  padding: 14,
+                  background: "#ffffff",
+                  boxShadow: "0 1px 2px rgba(15,23,42,0.06)"
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                  <h3 style={{ margin: 0 }}>{u.name}</h3>
+                  <span style={{ fontSize: 12, color: "#6b7280" }}>{u.country}</span>
+                </div>
+                <p style={{ margin: "2px 0", fontSize: 13 }}>
+                  <strong>Cost:</strong> {u.cost_level}
+                </p>
+                <p style={{ margin: "2px 0", fontSize: 13 }}>
+                  <strong>Acceptance Chance:</strong> {u.acceptance_chance}
+                </p>
+                <p style={{ margin: "2px 0", fontSize: 13 }}>
+                  <strong>Risk:</strong> {u.risk_reason}
+                </p>
+
+                <button
+                  type="button"
+                  className="primary-button"
+                  style={{ marginTop: 8 }}
+                  onClick={() => lockUniversity(u.name)}
+                >
+                  Lock This University
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="card">
+        <h3 style={{ marginTop: 0, marginBottom: 10 }}>How locking works</h3>
+        <ul style={{ paddingLeft: 18, fontSize: 13, color: "#d1d5db" }}>
+          <li>Lock at least one university to unlock the Application Guidance stage.</li>
+          <li>You can still unlock later, but your tasks and strategy will reset.</li>
+          <li>Use a mix of Dream, Target, and Safe universities before locking your final choices.</li>
+        </ul>
+        <button
+          type="button"
+          className="secondary-button"
+          style={{ marginTop: 12 }}
+          onClick={() => navigate("/counsellor")}
+        >
+          Ask AI to refine this list
+        </button>
+      </section>
     </div>
   );
 }

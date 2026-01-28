@@ -1,0 +1,19 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">AI Counsellor</title>
+  <desc id="desc">Minimal logo combining a graduation cap with chat bubble for an AI study abroad counsellor</desc>
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+  </defs>
+  <rect x="6" y="6" width="52" height="52" rx="16" fill="#ffffff" stroke="#e5e7eb" />
+  <path d="M16 24L32 16L48 24L32 32Z" fill="url(#grad)" />
+  <path d="M20 28V36C20 40 25 44 32 44C39 44 44 40 44 36V28L32 34Z" fill="#eff6ff" stroke="#2563eb" stroke-width="1.2" />
+  <circle cx="25" cy="36" r="2" fill="#2563eb" />
+  <circle cx="32" cy="36" r="2" fill="#2563eb" />
+  <circle cx="39" cy="36" r="2" fill="#2563eb" />
+  <path d="M46 25V33" stroke="#2563eb" stroke-width="2" stroke-linecap="round" />
+  <circle cx="46" cy="35" r="2" fill="#2563eb" />
+</svg>
+

@@ -7,6 +7,7 @@ const completeOnboarding = async (req, res) => {
   try {
     const { userId, profileData } = req.body;
 
+    // Save profile data for onboarding; completion is derived from required fields
     await updateProfile(userId, profileData);
     await updateStage(userId, "UNIVERSITY_DISCOVERY");
 
@@ -24,7 +25,7 @@ const getProfileStatus = async (req, res) => {
   const profile = await getProfile(userId);
 
   res.json({
-    onboardingCompleted: profile?.onboarding_completed || false
+    onboardingCompleted: isOnboardingComplete(profile)
   });
 };
 
@@ -67,9 +68,9 @@ const updateUserProfile = async (req, res) => {
     // Re-generate todos if user is in APPLICATION_PREP stage
     const stage = await getStage(userId);
     if (stage === "APPLICATION_PREP") {
-      const lockedUni = getLockedUniversity(userId);
+      const lockedUni = await getLockedUniversity(userId);
       if (lockedUni) {
-        generateTodos(userId, lockedUni);
+        await generateTodos(userId, lockedUni);
       }
     }
 
@@ -140,6 +141,20 @@ const calculateProfileStrength = (profile) => {
   }
 
   return `${strength} (${score}/100) - ${factors.join(", ")}`;
+};
+
+// Derive onboarding completion from key profile fields so we don't depend on a specific DB column
+const isOnboardingComplete = (profile) => {
+  if (!profile) {
+    return false;
+  }
+
+  const hasAcademicBackground = Boolean(profile.current_education && profile.graduation_year);
+  const hasStudyGoal = Boolean(profile.target_degree);
+  const hasPreferencesAndBudget = Boolean(profile.budget_range);
+  const hasExamReadiness = Boolean(profile.ielts_status || profile.gre_gmat_status || profile.sop_status);
+
+  return hasAcademicBackground && hasStudyGoal && hasPreferencesAndBudget && hasExamReadiness;
 };
 
 module.exports = { completeOnboarding, getProfileStatus, getProfileWithStage, updateUserProfile };
